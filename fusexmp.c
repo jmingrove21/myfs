@@ -53,19 +53,24 @@ static struct {
   char driveB[512];
 } global_context;
 
+
+//modify
 static int xmp_getattr(const char *path, struct stat *stbuf)
 {
-  char fullpath[PATH_MAX];
+  char fullpath[2][PATH_MAX];
 	int res;
-
-  sprintf(fullpath, "%s%s",
+  struct stat stbuf1;
+  sprintf(fullpath[0], "%s%s",
       rand() % 2 == 0 ? global_context.driveA : global_context.driveB, path);
+  sprintf(fullpath[1],"%s%s",rand()%2==0?global_context.driveA:global_context.driveB,path);
 
-  fprintf(stdout, "getattr: %s\n", fullpath);
 
-	res = lstat(fullpath, stbuf);
-	if (res == -1)
+  res=lstat(fullpath[0],stbuf);
+  res=lstat(fullpath[1],&stbuf);
+  if (res == -1)
 		return -errno;
+
+  stbuf->st_size=stbuf->st_size+stbuf1.st_size;
 
 	return 0;
 }
@@ -83,9 +88,10 @@ static int xmp_access(const char *path, int mask)
 	res = access(fullpath, mask);
 	if (res == -1)
 		return -errno;
-
 	return 0;
 }
+
+
 
 static int xmp_readlink(const char *path, char *buf, size_t size)
 {
@@ -132,7 +138,6 @@ static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 		st.st_ino = de->d_ino;
 		st.st_mode = de->d_type << 12;
 
-    fprintf(stdout, "directory: %s\n", de->d_name);
 
 		if (filler(buf, de->d_name, &st, 0))
 			break;
@@ -184,8 +189,6 @@ static int xmp_mkdir(const char *path, mode_t mode)
   for (int i = 0; i < 2; ++i) {
     const char* fullpath = fullpaths[i];
 
-    fprintf(stdout, "mkdir: %s\n", fullpath);
-
     res = mkdir(fullpath, mode);
     if (res == -1)
       return -errno;
@@ -204,7 +207,6 @@ static int xmp_unlink(const char *path)
 
   for (int i = 0; i < 2; ++i) {
     const char* fullpath = fullpaths[i];
-    fprintf(stdout, "unlink: %s\n", fullpath);
     res = unlink(fullpath);
     if (res == -1)
       return -errno;
@@ -223,7 +225,6 @@ static int xmp_rmdir(const char *path)
 
   for (int i = 0; i < 2; ++i) {
     const char* fullpath = fullpaths[i];
-    fprintf(stdout, "rmdir: %s\n", fullpath);
     res = rmdir(fullpath);
     if (res == -1)
       return -errno;
